@@ -17,6 +17,9 @@ interface XmpNative extends Library {
     XmpNative Instance = (XmpNative) Native.loadLibrary(LIBRARY_NAME, XmpNative.class);
     NativeLibrary LibraryInstance = NativeLibrary.getInstance(LIBRARY_NAME);
 
+    int VersionCode = LibraryInstance.getGlobalVariableAddress("xmp_vercode").getInt(0);
+    String VersionName = LibraryInstance.getGlobalVariableAddress("xmp_version").getPointer(0).getString(0);
+
     int XMP_NAME_SIZE = 64;	// Size of module name and type
 
     int XMP_KEY_OFF = 0x81;	// Note number for key off event

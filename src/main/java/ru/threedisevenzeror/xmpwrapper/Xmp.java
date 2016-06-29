@@ -1,5 +1,7 @@
 package ru.threedisevenzeror.xmpwrapper;
 
+import com.sun.jna.LastErrorException;
+import com.sun.jna.Native;
 import com.sun.jna.NativeLong;
 
 import java.io.ByteArrayOutputStream;
@@ -372,15 +374,11 @@ public class Xmp implements Closeable {
     }
 
     public static String getLibraryVersion() {
-        return XmpNative.LibraryInstance
-                .getGlobalVariableAddress("xmp_version")
-                .getPointer(0).getString(0);
+        return XmpNative.VersionName;
     }
 
-    public static long getLibraryVersionCode() {
-        return XmpNative.LibraryInstance
-                .getGlobalVariableAddress("xmp_vercode")
-                .getInt(0);
+    public static int getLibraryVersionCode() {
+        return XmpNative.VersionCode;
     }
 
     private static int checkError(int code) {
@@ -392,12 +390,14 @@ public class Xmp implements Closeable {
         }
 
         switch (code) {
+            case XmpNative.XMP_ERROR_SYSTEM: {
+                throw new LastErrorException(Native.getLastError());
+            }
             case XmpNative.XMP_END: message = "End"; break;
             case XmpNative.XMP_ERROR_INTERNAL: message = "Internal error"; break;
             case XmpNative.XMP_ERROR_FORMAT: message = "Unsupported module format"; break;
             case XmpNative.XMP_ERROR_DEPACK: message = "Error depacking file"; break;
             case XmpNative.XMP_ERROR_LOAD: message = "Error loading file"; break;
-            case XmpNative.XMP_ERROR_SYSTEM: message = "System error"; break;
             case XmpNative.XMP_ERROR_INVALID:  message = "Invalid parameter"; break;
             case XmpNative.XMP_ERROR_STATE: message = "Invalid player state"; break;
         }

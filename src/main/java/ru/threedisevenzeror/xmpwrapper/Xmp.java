@@ -20,39 +20,49 @@ public class Xmp implements Closeable {
     public static final int FORMAT_UNSIGNED = (1 << 1); // Mix to unsigned samples
     public static final int FORMAT_MONO = (1 << 2); // Mix to mono instead of stereo
 
-    // interpolation types
-    public static final int INTERP_NEAREST = 0; // Nearest neighbor
-    public static final int INTERP_LINEAR = 1; // Linear (default)
-    public static final int INTERP_SPLINE = 2; // Cubic spline
-
-    /* dsp effect types */
-    public static final int DSP_LOWPASS = (1 << 0); /* Lowpass filter effect */
+    // dsp effect types
+    public static final int DSP_LOWPASS = (1 << 0); // Lowpass filter effect
     public static final int DSP_ALL = (DSP_LOWPASS);
 
-    /* player state */
-    public static final int STATE_UNLOADED = 0; /* Context created */
-    public static final int STATE_LOADED = 1; /* Module loaded */
-    public static final int STATE_PLAYING = 2; /* Module playing */
+    // player flags
+    public static final int FLAGS_VBLANK = (1 << 0); // Use vblank timing
+    public static final int FLAGS_FX9BUG = (1 << 1); // Emulate FX9 bug
+    public static final int FLAGS_FIXLOOP = (1 << 2); // Emulate sample loop bug
 
-    /* player flags */
-    public static final int FLAGS_VBLANK = (1 << 0); /* Use vblank timing */
-    public static final int FLAGS_FX9BUG = (1 << 1); /* Emulate FX9 bug */
-    public static final int FLAGS_FIXLOOP = (1 << 2); /* Emulate sample loop bug */
+    // sample flags
+    public static final int XMP_SMPCTL_SKIP = (1 << 0); // Don't load samples
 
-    /* sample flags */
-    public static final int XMP_SMPCTL_SKIP = (1 << 0); /* Don't load samples */
+    // Hidden params
+    private static final int PARAM_INTERPOLATION_TYPE = 2;
+    private static final int PARAM_STATE = 8;
+
+    // Cached enum values
+    private static final State[] PLAYER_STATES = State.values();
+    private static final InterpolationType[] INTERPOLATION_TYPES = InterpolationType.values();
+
+    // player state
+    public enum State {
+        Unloaded, // Context created
+        Loaded, // Module loaded
+        Playing // Module playing
+    }
+
+    // interpolation types
+    public enum InterpolationType {
+        Neareset, // Nearest neighbor
+        Linear, // Linear (default)
+        Spline, // Cubic spline
+    }
 
     public enum Parameter {
 
         AmplificationFactor(0),
         StereoMixing(1),
-        InterpolationType(2),
         DspEffectFlags(3),
         Flags(4),
         CurrentModuleFlags(5),
         SampleControlFlags(6),
         Volume(7),
-        PlayerState(8),
         SMIXVolume(9),
         DefaultPan(10);
 
@@ -322,11 +332,31 @@ public class Xmp implements Closeable {
     }
 
     public void setParam(Parameter param, int value) {
-        checkError(lib.xmp_set_player(context, param.code, value));
+        setParam(param.code, value);
     }
 
     public int getParam(Parameter param) {
-        return checkError(lib.xmp_get_player(context, param.code));
+        return getParam(param.code);
+    }
+
+    private int setParam(int param, int value) {
+        return checkError(lib.xmp_set_player(context, param, value));
+    }
+
+    private int getParam(int param) {
+        return checkError(lib.xmp_get_player(context, param));
+    }
+
+    public void setInterpolationType(InterpolationType type) {
+        setParam(PARAM_INTERPOLATION_TYPE, type.ordinal());
+    }
+
+    public InterpolationType getInterpolationType() {
+        return INTERPOLATION_TYPES[getParam(PARAM_INTERPOLATION_TYPE)];
+    }
+
+    public State getPlayerState() {
+        return PLAYER_STATES[getParam(PARAM_STATE)];
     }
 
     // Static functions

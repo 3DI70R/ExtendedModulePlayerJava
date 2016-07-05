@@ -115,7 +115,7 @@ interface XmpNative extends Library {
         }
     }
 
-    class Event extends Structure {
+    class Event extends Structure implements Xmp.Event {
 
         public UnsignedChar note; // Note number (0 means no note)
         public UnsignedChar ins; // Patch number
@@ -130,6 +130,41 @@ interface XmpNative extends Library {
         protected List getFieldOrder() {
             return Arrays.asList("note", "ins", "vol", "fxt", "fxp", "f2t", "f2p", "_flag");
         }
+
+        @Override
+        public int getNote() {
+            return note.intValue();
+        }
+
+        @Override
+        public int getInstrument() {
+            return ins.intValue();
+        }
+
+        @Override
+        public int getVolume() {
+            return vol.intValue();
+        }
+
+        @Override
+        public int getPrimaryEffectType() {
+            return fxt.intValue();
+        }
+
+        @Override
+        public int getPrimaryEffectParams() {
+            return fxp.intValue();
+        }
+
+        @Override
+        public int getSecondaryEffectType() {
+            return f2t.intValue();
+        }
+
+        @Override
+        public int getSecondaryEffectParams() {
+            return f2p.intValue();
+        }
     }
 
     class Track extends Structure {
@@ -143,14 +178,7 @@ interface XmpNative extends Library {
         }
     }
 
-    class Envelope extends Structure {
-
-        public static final int XMP_ENVELOPE_ON = (1 << 0);  // Envelope is enabled
-        public static final int XMP_ENVELOPE_SUS = (1 << 1);  // Envelope has sustain point
-        public static final int XMP_ENVELOPE_LOOP = (1 << 2);  // Envelope has loop
-        public static final int XMP_ENVELOPE_FLT = (1 << 3);  // Envelope is used for filter
-        public static final int XMP_ENVELOPE_SLOOP = (1 << 4);  // Envelope has sustain loop
-        public static final int XMP_ENVELOPE_CARRY = (1 << 5);  // Don't reset envelope position
+    class Envelope extends Structure implements Xmp.Envelope {
 
         public int flg; // Flags
         public int npt; // Number of envelope points
@@ -165,9 +193,49 @@ interface XmpNative extends Library {
         protected List getFieldOrder() {
             return Arrays.asList("flg", "npt", "scl", "sus", "sue", "lps", "lpe", "data");
         }
+
+        @Override
+        public int getFlags() {
+            return flg;
+        }
+
+        @Override
+        public int getEnvelopePoints() {
+            return npt;
+        }
+
+        @Override
+        public int getEnvelopeScaling() {
+            return scl;
+        }
+
+        @Override
+        public int getSustainStartPoint() {
+            return sus;
+        }
+
+        @Override
+        public int getSustainEndPoint() {
+            return sue;
+        }
+
+        @Override
+        public int getLoopStartPoint() {
+            return lps;
+        }
+
+        @Override
+        public int getLoopEndPoint() {
+            return lpe;
+        }
+
+        @Override
+        public short[] getPoints() {
+            return data;
+        }
     }
 
-    class InstrumentKey extends Structure {
+    class InstrumentKey extends Structure implements Xmp.InstrumentKey {
 
         public UnsignedChar ins; // Instrument number for each key
         public byte xpo; // Instrument transpose for each key
@@ -176,9 +244,19 @@ interface XmpNative extends Library {
         protected List getFieldOrder() {
             return Arrays.asList("ins", "xpo");
         }
+
+        @Override
+        public int getNumber() {
+            return ins.intValue();
+        }
+
+        @Override
+        public int getTranspose() {
+            return xpo;
+        }
     }
 
-    class SubInstrument extends Structure {
+    class SubInstrument extends Structure implements Xmp.SubInstrument {
 
         public static class ByReference extends SubInstrument implements Structure.ByReference {}
 
@@ -218,6 +296,86 @@ interface XmpNative extends Library {
             return Arrays.asList("vol", "gvl", "pan", "xpo", "fin", "vwf", "vde",
                     "vra", "vsw", "rvv", "sid", "nna", "dct", "dca", "ifc", "ifr");
         }
+
+        @Override
+        public int getDefaultVolume() {
+            return vol;
+        }
+
+        @Override
+        public int getGlobalVolume() {
+            return gvl;
+        }
+
+        @Override
+        public int getPan() {
+            return pan;
+        }
+
+        @Override
+        public int getTranspose() {
+            return xpo;
+        }
+
+        @Override
+        public int getFinetune() {
+            return fin;
+        }
+
+        @Override
+        public int getVibratoVaveform() {
+            return vwf;
+        }
+
+        @Override
+        public int getVibratoDepth() {
+            return vde;
+        }
+
+        @Override
+        public int getVibratoRate() {
+            return vra;
+        }
+
+        @Override
+        public int getVibratoSweep() {
+            return vsw;
+        }
+
+        @Override
+        public int getRandomVariation() {
+            return rvv;
+        }
+
+        @Override
+        public int getSampleNumber() {
+            return sid;
+        }
+
+        @Override
+        public int getNewNoteAction() {
+            return nna;
+        }
+
+        @Override
+        public int getDuplicateCheckType() {
+            return dct;
+        }
+
+        @Override
+        public int getDuplicateCheckAction() {
+            return dca;
+        }
+
+        @Override
+        public int getInitialFilterCutoff() {
+            return ifc;
+        }
+
+        @Override
+        public int getInitialFilterResonance() {
+            return ifr;
+        }
     }
 
     class Instrument extends Structure implements Xmp.Instrument {
@@ -238,6 +396,46 @@ interface XmpNative extends Library {
         @Override
         public String getName() {
             return Native.toString(name);
+        }
+
+        @Override
+        public int getVolume() {
+            return vol;
+        }
+
+        @Override
+        public int getSampleCount() {
+            return nsm;
+        }
+
+        @Override
+        public int getFadeout() {
+            return rls;
+        }
+
+        @Override
+        public Xmp.Envelope getAmplitudeEnvelope() {
+            return aei;
+        }
+
+        @Override
+        public Xmp.Envelope getPanEnvelope() {
+            return pei;
+        }
+
+        @Override
+        public Xmp.Envelope getFrequencyEnvelope() {
+            return fei;
+        }
+
+        @Override
+        public Xmp.InstrumentKey[] getKeys() {
+            return keys;
+        }
+
+        @Override
+        public Xmp.SubInstrument getSubInstrument() {
+            return sub;
         }
 
         @Override
@@ -517,6 +715,51 @@ interface XmpNative extends Library {
         protected List getFieldOrder() {
             return Arrays.asList("period", "position", "pitchbend", "note",
                     "instrument", "sample", "volume", "pan", "reserved", "event");
+        }
+
+        @Override
+        public int getPeriod() {
+            return period.intValue();
+        }
+
+        @Override
+        public int getPosition() {
+            return position.intValue();
+        }
+
+        @Override
+        public int getPitchBend() {
+            return pitchbend;
+        }
+
+        @Override
+        public int getNote() {
+            return note.intValue();
+        }
+
+        @Override
+        public int getInstrumentIndex() {
+            return instrument.intValue();
+        }
+
+        @Override
+        public int getSampleIndex() {
+            return sample.intValue();
+        }
+
+        @Override
+        public int getVolume() {
+            return volume.intValue();
+        }
+
+        @Override
+        public int getPan() {
+            return pan.intValue();
+        }
+
+        @Override
+        public Xmp.Event getEvent() {
+            return event;
         }
     }
 

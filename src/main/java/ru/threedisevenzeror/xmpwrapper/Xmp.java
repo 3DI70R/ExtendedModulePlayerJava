@@ -88,6 +88,7 @@ public class Xmp implements Closeable {
     }
 
     public interface TestInfo {
+
         String getName();
         String getType();
     }
@@ -113,8 +114,73 @@ public class Xmp implements Closeable {
 
     }
 
+    public interface Event {
+
+        int getNote();
+        int getInstrument();
+        int getVolume();
+        int getPrimaryEffectType();
+        int getPrimaryEffectParams();
+        int getSecondaryEffectType();
+        int getSecondaryEffectParams();
+    }
+
+    public interface Envelope {
+
+        int XMP_ENVELOPE_ON = (1 << 0);  // Envelope is enabled
+        int XMP_ENVELOPE_SUS = (1 << 1);  // Envelope has sustain point
+        int XMP_ENVELOPE_LOOP = (1 << 2);  // Envelope has loop
+        int XMP_ENVELOPE_FLT = (1 << 3);  // Envelope is used for filter
+        int XMP_ENVELOPE_SLOOP = (1 << 4);  // Envelope has sustain loop
+        int XMP_ENVELOPE_CARRY = (1 << 5);  // Don't reset envelope position
+
+        int getFlags();
+        int getEnvelopePoints();
+        int getEnvelopeScaling();
+        int getSustainStartPoint();
+        int getSustainEndPoint();
+        int getLoopStartPoint();
+        int getLoopEndPoint();
+        short[] getPoints();
+    }
+
+    public interface InstrumentKey {
+
+        int getNumber();
+        int getTranspose();
+    }
+
+    public interface SubInstrument {
+
+        int getDefaultVolume();
+        int getGlobalVolume();
+        int getPan();
+        int getTranspose();
+        int getFinetune();
+        int getVibratoVaveform();
+        int getVibratoDepth();
+        int getVibratoRate();
+        int getVibratoSweep();
+        int getRandomVariation();
+        int getSampleNumber();
+        int getNewNoteAction();
+        int getDuplicateCheckType();
+        int getDuplicateCheckAction();
+        int getInitialFilterCutoff();
+        int getInitialFilterResonance();
+    }
+
     public interface Instrument {
+
         String getName();
+        int getVolume();
+        int getSampleCount();
+        int getFadeout();
+        Envelope getAmplitudeEnvelope();
+        Envelope getPanEnvelope();
+        Envelope getFrequencyEnvelope();
+        InstrumentKey[] getKeys();
+        SubInstrument getSubInstrument();
     }
 
     public interface Module {
@@ -180,9 +246,20 @@ public class Xmp implements Closeable {
 
     public interface ChannelInfo {
 
+        int getPeriod();
+        int getPosition();
+        int getPitchBend();
+        int getNote();
+        int getInstrumentIndex();
+        int getSampleIndex();
+        int getVolume();
+        int getPan();
+        Event getEvent();
     }
 
     private XmpNative.Context context;
+    private XmpNative.ModuleInfo sharedModuleInfo = new XmpNative.ModuleInfo();
+    private XmpNative.FrameInfo sharedFrame = new XmpNative.FrameInfo();
 
     public Xmp() {
         context = lib.xmp_create_context();
@@ -231,9 +308,8 @@ public class Xmp implements Closeable {
     }
 
     public ModuleInfo getModuleInfo() {
-        XmpNative.ModuleInfo info = new XmpNative.ModuleInfo();
-        lib.xmp_get_module_info(context, info);
-        return info;
+        lib.xmp_get_module_info(context, sharedModuleInfo);
+        return sharedModuleInfo;
     }
 
     public void startPlayer(int sampleRate) {
@@ -252,7 +328,7 @@ public class Xmp implements Closeable {
         lib.xmp_restart_module(context);
     }
 
-    public void setChannelMute(int channel, boolean mute) {
+    public void muteChannel(int channel, boolean mute) {
         checkError(lib.xmp_channel_mute(context, channel, mute ? 1 : 0));
     }
 
@@ -260,17 +336,12 @@ public class Xmp implements Closeable {
         return checkError(lib.xmp_channel_mute(context, channel, -1)) == 1;
     }
 
-    public void setChannelVolume(int channel, float volume) {
-        if(volume < 0) {
-            volume = 0;
-        } else if(volume > 1) {
-            volume = 1;
-        }
-        checkError(lib.xmp_channel_vol(context, channel, (int) (volume * 100)));
+    public void setChannelVolume(int channel, int volume) {
+        checkError(lib.xmp_channel_vol(context, channel, volume));
     }
 
-    public float getChannelVolume(int channel) {
-        return checkError(lib.xmp_channel_vol(context, channel, -1)) / 100.0f;
+    public int getChannelVolume(int channel) {
+        return checkError(lib.xmp_channel_vol(context, channel, -1));
     }
 
     public boolean playFrame() {
@@ -287,9 +358,8 @@ public class Xmp implements Closeable {
     }
 
     public FrameInfo getCurrentFrame() {
-        XmpNative.FrameInfo frame = new XmpNative.FrameInfo();
-        lib.xmp_get_frame_info(context, frame);
-        return frame;
+        lib.xmp_get_frame_info(context, sharedFrame);
+        return sharedFrame;
     }
 
     public boolean playBuffer(byte[] buffer, int loopCount) {
@@ -341,8 +411,29 @@ public class Xmp implements Closeable {
         return getParam(param.code);
     }
 
-    private int setParam(int param, int value) {
-        return checkError(lib.xmp_set_player(context, param, value));
+    public void injectEvent(int channel, Event event) {
+        injectEvent(channel, event.getNote(), event.getInstrument(), event.getVolume(),
+                event.getPrimaryEffectType(), event.getPrimaryEffectParams(),
+                event.getSecondaryEffectType(), event.getSecondaryEffectParams());
+    }
+
+    public void injectEvent(int channel, int note, int instrument, int volume,
+                            int primaryEffect,  int primaryEffectParams,
+                            int secondaryEffect, int secondaryEffectParams) {
+        XmpNative.Event event = new XmpNative.Event();
+        event.note = new XmpNative.UnsignedChar(note);
+        event.ins = new XmpNative.UnsignedChar(instrument);
+        event.vol = new XmpNative.UnsignedChar(volume);
+        event.fxt = new XmpNative.UnsignedChar(primaryEffect);
+        event.fxp = new XmpNative.UnsignedChar(primaryEffectParams);
+        event.f2t = new XmpNative.UnsignedChar(secondaryEffect);
+        event.f2p = new XmpNative.UnsignedChar(secondaryEffectParams);
+        event._flag = new XmpNative.UnsignedChar(0);
+        lib.xmp_inject_event(context, channel, event);
+    }
+
+    private void setParam(int param, int value) {
+        checkError(lib.xmp_set_player(context, param, value));
     }
 
     private int getParam(int param) {

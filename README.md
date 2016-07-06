@@ -1,6 +1,9 @@
 # ExtendedModulePlayerJava
 Java Wrapper for Extended Module Player 4.3 library
 
+This library uses native libxmp library, you should compile it from sources before using this wrapper.
+http://xmp.sourceforge.net/
+
 Sample usage:
 
 ```

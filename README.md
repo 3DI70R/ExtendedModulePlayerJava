@@ -6,7 +6,7 @@ http://xmp.sourceforge.net/
 
 Sample usage:
 
-```
+```java
 SourceDataLine line = AudioSystem.getSourceDataLine(new AudioFormat(44100, 16, 2, true, false));
 line.open();
 line.start();
